@@ -206,7 +206,7 @@ export class StressScoreCalculator {
     return factors;
   }
 
-  private generateRecommendation(riskLevel: RiskLevel, factors: string[], data: VehicleData): string {
+  private generateRecommendation(riskLevel: RiskLevel, factors: string[], _data: VehicleData): string {
     if (riskLevel === 'critical') {
       const primaryIssue = factors[0] || 'multiple stress indicators';
       return `Immediate inspection recommended due to ${primaryIssue}. Schedule service before next scheduled yard stop.`;
