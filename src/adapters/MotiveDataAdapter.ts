@@ -68,7 +68,7 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
   async getAllVehicles(): Promise<Vehicle[]> {
     this.ensureAuthenticated();
 
-    const response = await this.fetch('/vehicles');
+    const response = await this.fetch('/v1/vehicles');
     const data = await response.json();
 
     // Normalize response based on actual API structure
@@ -88,24 +88,24 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
   }
 
   private async fetchVehicleDetails(vehicleId: string): Promise<any> {
-    const response = await this.fetch(`/vehicles/${vehicleId}`);
+    const response = await this.fetch(`/v1/vehicles/${vehicleId}`);
     return await response.json();
   }
 
   private async fetchFaultCodes(vehicleId: string): Promise<any[]> {
-    const response = await this.fetch(`/fault_codes?vehicle_id=${vehicleId}`);
+    const response = await this.fetch(`/v1/fault_codes?vehicle_id=${vehicleId}`);
     const data = await response.json();
     return data.fault_codes || data.data || data || [];
   }
 
   private async fetchInspectionReports(vehicleId: string): Promise<any[]> {
-    const response = await this.fetch(`/inspection_reports?vehicle_id=${vehicleId}`);
+    const response = await this.fetch(`/v1/inspection_reports?vehicle_id=${vehicleId}`);
     const data = await response.json();
     return data.inspection_reports || data.data || data || [];
   }
 
   private async fetchUtilizationData(vehicleId: string): Promise<any> {
-    const response = await this.fetch(`/vehicle_stats/${vehicleId}`);
+    const response = await this.fetch(`/v1/vehicle_stats/${vehicleId}`);
     return await response.json();
   }
 
