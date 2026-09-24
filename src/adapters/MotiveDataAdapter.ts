@@ -22,18 +22,18 @@ import type { Vehicle, VehicleData, VehicleDataAdapter } from '../types';
  * - Work order write access requires permission verification
  */
 export class MotiveDataAdapter implements VehicleDataAdapter {
-  private apiBaseUrl: string;
+  private _apiBaseUrl: string;
   private authToken: string | null = null;
 
   constructor(apiBaseUrl: string = 'https://api.gomotive.com/v1') {
-    this.apiBaseUrl = apiBaseUrl;
+    this._apiBaseUrl = apiBaseUrl;
   }
 
   setAuthToken(token: string): void {
     this.authToken = token;
   }
 
-  async getVehicleData(vehicleId: string): Promise<VehicleData> {
+  async getVehicleData(_vehicleId: string): Promise<VehicleData> {
     this.ensureAuthenticated();
 
     // TODO: Implement actual API calls
@@ -69,27 +69,27 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     }
   }
 
-  private async fetchVehicle(vehicleId: string): Promise<any> {
+  private async fetchVehicle(_vehicleId: string): Promise<any> {
     // TODO: Implement
     throw new Error('Not implemented');
   }
 
-  private async fetchFaultCodes(vehicleId: string): Promise<any[]> {
+  private async fetchFaultCodes(_vehicleId: string): Promise<any[]> {
     // TODO: Implement
     throw new Error('Not implemented');
   }
 
-  private async fetchInspectionDefects(vehicleId: string): Promise<any[]> {
+  private async fetchInspectionDefects(_vehicleId: string): Promise<any[]> {
     // TODO: Implement
     throw new Error('Not implemented');
   }
 
-  private async fetchMaintenanceHistory(vehicleId: string): Promise<any[]> {
+  private async fetchMaintenanceHistory(_vehicleId: string): Promise<any[]> {
     // TODO: Implement
     throw new Error('Not implemented');
   }
 
-  private async fetchUtilizationRate(vehicleId: string): Promise<number> {
+  private async fetchUtilizationRate(_vehicleId: string): Promise<number> {
     // TODO: Implement
     throw new Error('Not implemented');
   }
