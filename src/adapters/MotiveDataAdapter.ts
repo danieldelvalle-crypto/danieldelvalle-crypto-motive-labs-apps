@@ -22,11 +22,10 @@ import type { Vehicle, VehicleData, VehicleDataAdapter } from '../types';
  * - Work order write access requires permission verification
  */
 export class MotiveDataAdapter implements VehicleDataAdapter {
-  private _apiBaseUrl: string;
   private authToken: string | null = null;
 
-  constructor(apiBaseUrl: string = 'https://api.gomotive.com/v1') {
-    this._apiBaseUrl = apiBaseUrl;
+  constructor(_apiBaseUrl: string = 'https://api.gomotive.com/v1') {
+    // API base URL will be used when implementing actual Motive API calls
   }
 
   setAuthToken(token: string): void {
@@ -37,14 +36,12 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     this.ensureAuthenticated();
 
     // TODO: Implement actual API calls
-    // Example structure:
-    // const [vehicle, faultCodes, inspections, maintenance, utilization] = await Promise.all([
-    //   this.fetchVehicle(vehicleId),
-    //   this.fetchFaultCodes(vehicleId),
-    //   this.fetchInspectionDefects(vehicleId),
-    //   this.fetchMaintenanceHistory(vehicleId),
-    //   this.fetchUtilizationRate(vehicleId),
-    // ]);
+    // When implementing, fetch data from Motive APIs:
+    // - Vehicle details: GET /vehicles/{vehicleId}
+    // - Fault codes: GET /diagnostics/fault_codes?vehicle_id={vehicleId}
+    // - Inspection defects: GET /inspections/defects?vehicle_id={vehicleId}
+    // - Maintenance history: GET /maintenance/history?vehicle_id={vehicleId}
+    // - Utilization metrics: GET /telematics/utilization?vehicle_id={vehicleId}
 
     throw new Error('MotiveDataAdapter not yet implemented. Use MockDataAdapter for development.');
   }
@@ -53,12 +50,14 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     this.ensureAuthenticated();
 
     // TODO: Implement actual API call
-    // const response = await fetch(`${this.apiBaseUrl}/vehicles`, {
+    // Example:
+    // const response = await fetch(`${apiBaseUrl}/vehicles`, {
     //   headers: {
     //     'Authorization': `Bearer ${this.authToken}`,
     //     'Content-Type': 'application/json',
     //   },
     // });
+    // return await response.json();
 
     throw new Error('MotiveDataAdapter not yet implemented. Use MockDataAdapter for development.');
   }
@@ -67,30 +66,5 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     if (!this.authToken) {
       throw new Error('Not authenticated. Call setAuthToken() first.');
     }
-  }
-
-  private async fetchVehicle(_vehicleId: string): Promise<any> {
-    // TODO: Implement
-    throw new Error('Not implemented');
-  }
-
-  private async fetchFaultCodes(_vehicleId: string): Promise<any[]> {
-    // TODO: Implement
-    throw new Error('Not implemented');
-  }
-
-  private async fetchInspectionDefects(_vehicleId: string): Promise<any[]> {
-    // TODO: Implement
-    throw new Error('Not implemented');
-  }
-
-  private async fetchMaintenanceHistory(_vehicleId: string): Promise<any[]> {
-    // TODO: Implement
-    throw new Error('Not implemented');
-  }
-
-  private async fetchUtilizationRate(_vehicleId: string): Promise<number> {
-    // TODO: Implement
-    throw new Error('Not implemented');
   }
 }
