@@ -36,17 +36,10 @@ export class MotiveAuth {
       demoMode?: boolean;
     } = {}
   ) {
-    // Default to demo mode in development OR when running standalone (not embedded)
+    // Default to demo mode in development
     if (options.demoMode === undefined) {
-      this.options.demoMode = import.meta.env.DEV || this.isStandalone();
+      this.options.demoMode = import.meta.env.DEV;
     }
-  }
-
-  /**
-   * Check if the app is running standalone (not embedded in an iframe)
-   */
-  private isStandalone(): boolean {
-    return window.self === window.top;
   }
 
   /**
@@ -61,9 +54,6 @@ export class MotiveAuth {
     this.messageListener = this.handleMessage.bind(this);
     window.addEventListener('message', this.messageListener);
     this.notifyListeners('pending', null);
-
-    // Signal readiness to parent (Motive Dashboard)
-    this.signalReady();
   }
 
   /**
@@ -103,7 +93,6 @@ export class MotiveAuth {
     // SECURITY: Strict origin validation required
     // Only accept messages from Motive Dashboard
     const allowedOrigins = [
-      'https://app.gomotive.com',              // Motive Labs primary origin
       'https://dashboard.gomotive.com',
       'https://dashboard.keeptruckin.com',
       // Development/staging origins
@@ -179,29 +168,5 @@ export class MotiveAuth {
 
   private notifyListeners(status: AuthStatus, token: MotiveAuthToken | null): void {
     this.listeners.forEach((listener) => listener(status, token));
-  }
-
-  /**
-   * Signal readiness to parent window (Motive Dashboard)
-   * The parent may wait for this before sending the token
-   */
-  private signalReady(): void {
-    if (window.parent && window.parent !== window) {
-      const allowedOrigins = [
-        'https://app.gomotive.com',
-        'https://dashboard.gomotive.com',
-        'https://dashboard.keeptruckin.com',
-      ];
-
-      // Send ready signal to all allowed origins
-      // The parent will only process if it's the actual parent
-      allowedOrigins.forEach((origin) => {
-        try {
-          window.parent.postMessage({ type: 'ready' }, origin);
-        } catch (error) {
-          console.debug('Failed to signal readiness to', origin, error);
-        }
-      });
-    }
   }
 }
