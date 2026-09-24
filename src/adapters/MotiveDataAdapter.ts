@@ -175,15 +175,21 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
   }
 
   private async fetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
-    const url = `${this.apiBaseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    // Use server-side proxy to avoid CORS issues
+    // The proxy forwards requests to api.gomotive.com with the token
+    const proxyUrl = '/api/motive-proxy';
 
-    const response = await fetch(url, {
-      ...options,
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.authToken}`,
         'Content-Type': 'application/json',
-        ...options.headers,
       },
+      body: JSON.stringify({
+        endpoint: normalizedEndpoint,
+        token: this.authToken,
+      }),
     });
 
     if (!response.ok) {
