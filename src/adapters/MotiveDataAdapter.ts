@@ -38,11 +38,25 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
   async getVehicleData(vehicleId: string): Promise<VehicleData> {
     this.ensureAuthenticated();
 
-    // Parallel fetch of all vehicle data
+    if (!vehicleId) {
+      throw new Error('Vehicle ID is required');
+    }
+
+    // Parallel fetch of all vehicle data with graceful fallbacks
     const [vehicle, faultCodes, inspectionReports, utilizationData] = await Promise.all([
-      this.fetchVehicleDetails(vehicleId),
-      this.fetchFaultCodes(vehicleId),
-      this.fetchInspectionReports(vehicleId),
+      this.fetchVehicleDetails(vehicleId).catch((err) => {
+        console.warn(`Failed to fetch vehicle details for ${vehicleId}:`, err.message);
+        // Return minimal vehicle data if detail endpoint fails
+        return { id: vehicleId, number: vehicleId };
+      }),
+      this.fetchFaultCodes(vehicleId).catch((err) => {
+        console.warn(`Failed to fetch fault codes for ${vehicleId}:`, err.message);
+        return [];
+      }),
+      this.fetchInspectionReports(vehicleId).catch((err) => {
+        console.warn(`Failed to fetch inspection reports for ${vehicleId}:`, err.message);
+        return [];
+      }),
       this.fetchUtilizationData(vehicleId).catch(() => null), // Optional endpoint
     ]);
 
@@ -74,9 +88,15 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     // Normalize response based on actual API structure
     const vehicles = data.vehicles || data.data || data;
 
+    if (!Array.isArray(vehicles)) {
+      console.error('Unexpected vehicles response format:', data);
+      return [];
+    }
+
     return vehicles.map((v: any) => ({
-      id: v.id?.toString() || v.vehicle_id?.toString(),
-      name: v.make_model || v.number || `Vehicle ${v.id}`,
+      // Try multiple ID field names that Motive APIs use
+      id: v.id?.toString() || v.vehicle_id?.toString() || v.number?.toString(),
+      name: v.make_model || v.number || `Vehicle ${v.id || v.vehicle_id}`,
       make: v.make || 'Unknown',
       model: v.model || 'Unknown',
       year: v.year || 2020,
