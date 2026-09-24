@@ -12,9 +12,12 @@ The Component Stress Advisor analyzes vehicle health data to identify maintenanc
 - **Actionable recommendations** with estimated service timelines
 - **Confidence metrics** based on available data quality
 
-## Current Status: MVP with Mock Data
+## Current Status: Motive API Integration Ready
 
-This MVP uses realistic mock data to demonstrate the user experience and scoring logic. The data adapter is designed to be swapped for Motive Public API integration once API access is configured.
+This app supports both demo mode (mock data) and live Motive integration:
+
+- **Demo Mode**: Uses realistic mock data for local development and testing
+- **Motive Dashboard**: Automatically connects to Motive Public APIs when embedded in the Motive Dashboard using postMessage authentication
 
 ## Features
 
@@ -121,21 +124,58 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed Vercel deployment instructions
 3. Vercel auto-detects Vite configuration
 4. Deploy and verify
 
+## Motive Integration
+
+### Authentication Flow
+
+When embedded in the Motive Dashboard:
+
+1. **App loads** as a publicly accessible shell at the Vercel URL
+2. **Motive Dashboard** embeds the app in an iframe
+3. **Dashboard sends JWT** via postMessage: `{ type: 'SET_TOKEN', token: '<jwt>' }`
+4. **App validates token** and stores it for API calls
+5. **App switches** from MockDataAdapter to MotiveDataAdapter
+6. **API calls** use the token: `Authorization: Bearer <token>`
+
+### Public API Endpoints Used
+
+- `GET /v1/vehicles` - List all vehicles in fleet
+- `GET /v1/vehicles/{id}` - Get vehicle details, mileage, engine hours
+- `GET /v1/fault_codes?vehicle_id={id}` - Get diagnostic trouble codes
+- `GET /v1/inspection_reports?vehicle_id={id}` - Get DVIR inspection results
+- `GET /v1/vehicle_stats/{id}` - Get utilization metrics
+
+See `src/adapters/MotiveDataAdapter.ts` for implementation details.
+
+### Testing Motive Integration
+
+**Local Development (Demo Mode)**:
+```bash
+npm run dev
+```
+Automatically uses MockDataAdapter with synthetic data.
+
+**Testing with Motive Dashboard**:
+1. Deploy to Vercel
+2. Register app in Motive Labs
+3. Open app from Motive Dashboard
+4. App receives token via postMessage and connects to live APIs
+
 ## Roadmap
 
-### Phase 1: MVP (Current)
+### Phase 1: MVP ✅ Complete
 - ✅ Mock data adapter
 - ✅ Component-stress scoring algorithm
 - ✅ Fleet risk dashboard
 - ✅ Detailed vehicle analysis view
 - ✅ Vercel deployment configuration
 
-### Phase 2: Motive Integration
-- [ ] Motive authentication handshake (JWT via postMessage)
-- [ ] Implement MotiveDataAdapter with Public APIs
-- [ ] Integrate Vehicles, Diagnostics, Inspections, and Maintenance APIs
-- [ ] Test with real fleet data
-- [ ] Handle API rate limits and errors
+### Phase 2: Motive Integration ✅ Complete
+- ✅ Motive authentication handshake (JWT via postMessage)
+- ✅ Implement MotiveDataAdapter with Public APIs
+- ✅ Integrate Vehicles, Diagnostics, Inspections APIs
+- ⏳ Test with real fleet data (pending Labs registration)
+- ⏳ Handle API rate limits and errors (pending real-world usage)
 
 ### Phase 3: Enhanced Scoring
 - [ ] Request access to additional telemetry data
