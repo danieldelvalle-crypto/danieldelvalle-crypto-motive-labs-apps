@@ -87,7 +87,7 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     }));
 
     // Filter out vehicles without valid IDs to prevent downstream API errors
-    const validVehicles = mappedVehicles.filter(v => v.id && v.id.trim() !== '');
+    const validVehicles = mappedVehicles.filter((v: Vehicle) => v.id && v.id.trim() !== '');
     const filteredCount = mappedVehicles.length - validVehicles.length;
 
     if (filteredCount > 0) {
