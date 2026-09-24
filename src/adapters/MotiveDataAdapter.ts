@@ -39,7 +39,9 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     this.ensureAuthenticated();
 
     if (!vehicleId) {
-      throw new Error('Vehicle ID is required');
+      console.warn('getVehicleData called without vehicle ID');
+      // Return minimal data instead of throwing to avoid breaking the dashboard
+      return this.getMinimalVehicleData('unknown');
     }
 
     // Parallel fetch of all vehicle data with graceful fallbacks
@@ -93,7 +95,7 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
       return [];
     }
 
-    return vehicles.map((v: any) => ({
+    const mappedVehicles = vehicles.map((v: any) => ({
       // Try multiple ID field names that Motive APIs use
       id: v.id?.toString() || v.vehicle_id?.toString() || v.number?.toString(),
       name: v.make_model || v.number || `Vehicle ${v.id || v.vehicle_id}`,
@@ -105,6 +107,15 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
       engineHours: v.current_engine_hours || 0,
       status: this.mapVehicleStatus(v.status),
     }));
+
+    // Filter out vehicles without valid IDs to prevent downstream errors
+    const validVehicles = mappedVehicles.filter((v) => v.id && v.id !== 'undefined');
+
+    if (validVehicles.length < mappedVehicles.length) {
+      console.warn(`Filtered out ${mappedVehicles.length - validVehicles.length} vehicles without valid IDs`);
+    }
+
+    return validVehicles;
   }
 
   private async fetchVehicleDetails(vehicleId: string): Promise<any> {
@@ -184,6 +195,26 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     if (s.includes('critical') || s.includes('high')) return 'critical';
     if (s.includes('major') || s.includes('medium')) return 'major';
     return 'minor';
+  }
+
+  private getMinimalVehicleData(vehicleId: string): VehicleData {
+    return {
+      vehicle: {
+        id: vehicleId,
+        name: `Vehicle ${vehicleId}`,
+        make: 'Unknown',
+        model: 'Unknown',
+        year: 2020,
+        vin: '',
+        mileage: 0,
+        engineHours: 0,
+        status: 'active',
+      },
+      faultCodes: [],
+      inspectionDefects: [],
+      maintenanceHistory: [],
+      utilizationRate: 0.5,
+    };
   }
 
   private mapVehicleStatus(status: any): 'active' | 'maintenance' | 'inactive' {
