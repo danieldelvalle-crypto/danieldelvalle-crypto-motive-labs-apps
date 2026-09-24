@@ -93,6 +93,7 @@ export class MotiveAuth {
     // SECURITY: Strict origin validation required
     // Only accept messages from Motive Dashboard
     const allowedOrigins = [
+      'https://app.gomotive.com',              // Motive Labs primary origin
       'https://dashboard.gomotive.com',
       'https://dashboard.keeptruckin.com',
       // Development/staging origins
