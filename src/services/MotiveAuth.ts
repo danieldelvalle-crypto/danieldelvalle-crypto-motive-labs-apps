@@ -90,14 +90,26 @@ export class MotiveAuth {
   }
 
   private handleMessage(event: MessageEvent): void {
-    // Validate message origin
-    // TODO: Add strict origin validation for production
-    // Expected format: { type: 'SET_TOKEN', token: '<jwt>' }
+    // SECURITY: Strict origin validation required
+    // Only accept messages from Motive Dashboard
+    const allowedOrigins = [
+      'https://dashboard.gomotive.com',
+      'https://dashboard.keeptruckin.com',
+      // Development/staging origins
+      ...(import.meta.env.DEV ? ['http://localhost:3000', 'http://localhost:5173'] : [])
+    ];
 
+    if (!allowedOrigins.includes(event.origin)) {
+      console.warn('Rejected postMessage from unauthorized origin:', event.origin);
+      return;
+    }
+
+    // Validate message structure
     if (!event.data || typeof event.data !== 'object') {
       return;
     }
 
+    // Expected format: { type: 'SET_TOKEN', token: '<jwt>' }
     if (event.data.type === 'SET_TOKEN' && typeof event.data.token === 'string') {
       this.handleTokenMessage(event.data.token);
     }
@@ -105,13 +117,27 @@ export class MotiveAuth {
 
   private async handleTokenMessage(token: string): Promise<void> {
     try {
-      // TODO: Validate token against JWKS endpoint
-      // For now, decode and check expiration
+      // Decode and validate JWT claims
       const payload = this.decodeJWT(token);
 
+      // Validate required claims
       if (!payload.exp) {
         throw new Error('Token missing expiration');
       }
+
+      // Validate issuer (if configured)
+      const expectedIssuer = this.options.expectedAudience || 'https://gomotive.com';
+      if (payload.iss && payload.iss !== expectedIssuer) {
+        throw new Error(`Invalid token issuer: ${payload.iss}`);
+      }
+
+      // Validate token not expired
+      if (payload.exp * 1000 < Date.now()) {
+        throw new Error('Token already expired');
+      }
+
+      // NOTE: Full RS256 signature validation requires JWKS endpoint
+      // For production, implement JWKS-based validation per Motive Labs TDD
 
       this.token = {
         token,
