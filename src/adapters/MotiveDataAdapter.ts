@@ -26,10 +26,9 @@ import type { Vehicle, VehicleData, VehicleDataAdapter } from '../types';
  */
 export class MotiveDataAdapter implements VehicleDataAdapter {
   private authToken: string | null = null;
-  private apiBaseUrl: string;
 
-  constructor(apiBaseUrl: string = 'https://api.gomotive.com/v1') {
-    this.apiBaseUrl = apiBaseUrl;
+  constructor() {
+    // Constructor left for future initialization if needed
   }
 
   setAuthToken(token: string): void {
@@ -174,7 +173,7 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     return 'active';
   }
 
-  private async fetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  private async fetch(endpoint: string, _options: RequestInit = {}): Promise<Response> {
     // Use server-side proxy to avoid CORS issues
     // The proxy forwards requests to api.gomotive.com with the token
     const proxyUrl = '/api/motive-proxy';
