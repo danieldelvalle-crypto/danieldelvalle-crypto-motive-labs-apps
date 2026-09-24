@@ -3,26 +3,42 @@ import type { ComponentStressScore } from '../types';
 import { VehicleCard } from './VehicleCard';
 import { ScoreDetails } from './ScoreDetails';
 import { MockDataAdapter } from '../adapters/MockDataAdapter';
+import { MotiveDataAdapter } from '../adapters/MotiveDataAdapter';
 import { StressScoreCalculator } from '../services/StressScoreCalculator';
+import { useMotiveAuth } from '../hooks/useMotiveAuth';
 
 type SortOption = 'risk-desc' | 'risk-asc' | 'name' | 'days';
 type FilterOption = 'all' | 'critical' | 'at-risk' | 'watch';
 
 export function VehicleRiskDashboard() {
+  const { status: authStatus, token, isDemoMode } = useMotiveAuth();
   const [scores, setScores] = useState<ComponentStressScore[]>([]);
   const [selectedScore, setSelectedScore] = useState<ComponentStressScore | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('risk-desc');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
 
   useEffect(() => {
-    loadVehicleScores();
-  }, []);
+    if (authStatus === 'authenticated' || authStatus === 'demo') {
+      loadVehicleScores();
+    }
+  }, [authStatus, token, isDemoMode]);
 
   const loadVehicleScores = async () => {
     try {
       setLoading(true);
-      const adapter = new MockDataAdapter();
+      setError(null);
+
+      // Use MockDataAdapter in demo mode, MotiveDataAdapter when authenticated
+      const adapter = isDemoMode
+        ? new MockDataAdapter()
+        : (() => {
+            const motiveAdapter = new MotiveDataAdapter();
+            if (token) motiveAdapter.setAuthToken(token);
+            return motiveAdapter;
+          })();
+
       const calculator = new StressScoreCalculator();
 
       const vehicles = await adapter.getAllVehicles();
@@ -33,8 +49,9 @@ export function VehicleRiskDashboard() {
 
       const calculatedScores = await Promise.all(scorePromises);
       setScores(calculatedScores);
-    } catch (error) {
-      console.error('Failed to load vehicle scores:', error);
+    } catch (err) {
+      console.error('Failed to load vehicle scores:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load vehicle data');
     } finally {
       setLoading(false);
     }
@@ -73,6 +90,45 @@ export function VehicleRiskDashboard() {
     };
   };
 
+  if (authStatus === 'pending') {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          fontSize: '18px',
+          color: '#6B7280',
+        }}
+      >
+        Waiting for Motive authentication...
+      </div>
+    );
+  }
+
+  if (authStatus === 'error') {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          padding: '32px',
+        }}
+      >
+        <div style={{ fontSize: '18px', color: '#DC2626', marginBottom: '16px' }}>
+          Authentication Error
+        </div>
+        <div style={{ fontSize: '14px', color: '#6B7280', maxWidth: '500px', textAlign: 'center' }}>
+          Failed to authenticate with Motive Dashboard. Please refresh the page or contact support.
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div
@@ -95,6 +151,38 @@ export function VehicleRiskDashboard() {
 
   return (
     <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+      {isDemoMode && (
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: '#EFF6FF',
+            border: '1px solid #3B82F6',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            fontSize: '14px',
+            color: '#1E40AF',
+          }}
+        >
+          <strong>Demo Mode:</strong> Using synthetic data. When embedded in Motive Dashboard, this app will connect to live fleet data via Motive Public APIs.
+        </div>
+      )}
+
+      {error && (
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: '#FEF2F2',
+            border: '1px solid #DC2626',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            fontSize: '14px',
+            color: '#991B1B',
+          }}
+        >
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
           Component Stress Advisor
