@@ -36,10 +36,17 @@ export class MotiveAuth {
       demoMode?: boolean;
     } = {}
   ) {
-    // Default to demo mode in development
+    // Default to demo mode in development OR when running standalone (not embedded)
     if (options.demoMode === undefined) {
-      this.options.demoMode = import.meta.env.DEV;
+      this.options.demoMode = import.meta.env.DEV || this.isStandalone();
     }
+  }
+
+  /**
+   * Check if the app is running standalone (not embedded in an iframe)
+   */
+  private isStandalone(): boolean {
+    return window.self === window.top;
   }
 
   /**
