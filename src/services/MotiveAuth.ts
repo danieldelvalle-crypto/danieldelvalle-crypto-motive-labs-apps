@@ -54,6 +54,27 @@ export class MotiveAuth {
     this.messageListener = this.handleMessage.bind(this);
     window.addEventListener('message', this.messageListener);
     this.notifyListeners('pending', null);
+
+    // Signal ready to parent window
+    this.signalReady();
+  }
+
+  /**
+   * Signal to parent that app is ready to receive authentication
+   */
+  private signalReady(): void {
+    if (window.parent && window.parent !== window) {
+      const allowedOrigins = [
+        'https://app.gomotive.com',
+        'https://dashboard.gomotive.com',
+        'https://dashboard.keeptruckin.com',
+      ];
+
+      // Send ready signal to each allowed parent origin
+      allowedOrigins.forEach((origin) => {
+        window.parent.postMessage({ type: 'ready' }, origin);
+      });
+    }
   }
 
   /**
@@ -126,8 +147,8 @@ export class MotiveAuth {
         throw new Error('Token missing expiration');
       }
 
-      // Validate issuer (if configured)
-      const expectedIssuer = this.options.expectedAudience || 'https://gomotive.com';
+      // Validate issuer - Motive uses auth.gomotive.com
+      const expectedIssuer = 'https://auth.gomotive.com';
       if (payload.iss && payload.iss !== expectedIssuer) {
         throw new Error(`Invalid token issuer: ${payload.iss}`);
       }
