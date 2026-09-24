@@ -55,9 +55,10 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
         model: vehicle.model || 'Unknown',
         year: vehicle.year || 2020,
         vin: vehicle.vin || '',
+        mileage: vehicle.current_odometer || 0,
+        engineHours: vehicle.current_engine_hours || 0,
+        status: this.mapVehicleStatus(vehicle.status),
       },
-      mileage: vehicle.current_odometer || 0,
-      engineHours: vehicle.current_engine_hours || 0,
       faultCodes: this.normalizeFaultCodes(faultCodes),
       inspectionDefects: this.normalizeInspectionDefects(inspectionReports),
       maintenanceHistory: [], // TODO: Add when maintenance API endpoint is confirmed
@@ -81,6 +82,9 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
       model: v.model || 'Unknown',
       year: v.year || 2020,
       vin: v.vin || '',
+      mileage: v.current_odometer || 0,
+      engineHours: v.current_engine_hours || 0,
+      status: this.mapVehicleStatus(v.status),
     }));
   }
 
@@ -110,32 +114,38 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     code: string;
     description: string;
     severity: 'low' | 'medium' | 'high';
-    occurredAt: Date;
+    timestamp: string;
+    resolved: boolean;
   }> {
     return rawCodes.map((fc) => ({
       code: fc.code || fc.fault_code || 'UNKNOWN',
       description: fc.description || fc.fault_description || 'Unknown fault',
       severity: this.mapSeverity(fc.severity || fc.fault_severity),
-      occurredAt: new Date(fc.occurred_at || fc.timestamp || Date.now()),
+      timestamp: new Date(fc.occurred_at || fc.timestamp || Date.now()).toISOString(),
+      resolved: fc.resolved || false,
     }));
   }
 
   private normalizeInspectionDefects(rawReports: any[]): Array<{
-    type: string;
+    id: string;
+    category: string;
     description: string;
-    severity: 'low' | 'medium' | 'high';
-    reportedAt: Date;
+    severity: 'minor' | 'major' | 'critical';
+    timestamp: string;
+    resolved: boolean;
   }> {
     const defects: any[] = [];
 
     rawReports.forEach((report) => {
       const reportDefects = report.defects || report.violations || [];
-      reportDefects.forEach((defect: any) => {
+      reportDefects.forEach((defect: any, index: number) => {
         defects.push({
-          type: defect.type || defect.defect_type || 'Unknown',
+          id: defect.id || `${report.id || 'unknown'}-${index}`,
+          category: defect.type || defect.defect_type || defect.category || 'Unknown',
           description: defect.description || defect.defect_description || 'Unknown defect',
-          severity: this.mapSeverity(defect.severity),
-          reportedAt: new Date(defect.reported_at || report.time || Date.now()),
+          severity: this.mapInspectionSeverity(defect.severity),
+          timestamp: new Date(defect.reported_at || report.time || Date.now()).toISOString(),
+          resolved: defect.resolved || false,
         });
       });
     });
@@ -148,6 +158,20 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
     if (s.includes('high') || s.includes('critical')) return 'high';
     if (s.includes('medium') || s.includes('moderate')) return 'medium';
     return 'low';
+  }
+
+  private mapInspectionSeverity(severity: any): 'minor' | 'major' | 'critical' {
+    const s = String(severity || '').toLowerCase();
+    if (s.includes('critical') || s.includes('high')) return 'critical';
+    if (s.includes('major') || s.includes('medium')) return 'major';
+    return 'minor';
+  }
+
+  private mapVehicleStatus(status: any): 'active' | 'maintenance' | 'inactive' {
+    const s = String(status || '').toLowerCase();
+    if (s.includes('maintenance') || s.includes('repair') || s.includes('service')) return 'maintenance';
+    if (s.includes('inactive') || s.includes('disabled') || s.includes('retired')) return 'inactive';
+    return 'active';
   }
 
   private async fetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
