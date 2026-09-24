@@ -68,15 +68,15 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
   async getAllVehicles(): Promise<Vehicle[]> {
     this.ensureAuthenticated();
 
-    const response = await this.fetch('/vehicles');
+    const response = await this.fetch('/v1/vehicles');
     const data = await response.json();
 
     // Normalize response based on actual API structure
     const vehicles = data.vehicles || data.data || data;
 
-    return vehicles.map((v: any) => ({
-      id: v.id?.toString() || v.vehicle_id?.toString(),
-      name: v.make_model || v.number || `Vehicle ${v.id}`,
+    const mappedVehicles = vehicles.map((v: any) => ({
+      id: v.id?.toString() || v.vehicle_id?.toString() || '',
+      name: v.make_model || v.number || `Vehicle ${v.id || 'Unknown'}`,
       make: v.make || 'Unknown',
       model: v.model || 'Unknown',
       year: v.year || 2020,
@@ -85,27 +85,40 @@ export class MotiveDataAdapter implements VehicleDataAdapter {
       engineHours: v.current_engine_hours || 0,
       status: this.mapVehicleStatus(v.status),
     }));
+
+    // Filter out vehicles without valid IDs to prevent downstream API errors
+    const validVehicles = mappedVehicles.filter(v => v.id && v.id.trim() !== '');
+    const filteredCount = mappedVehicles.length - validVehicles.length;
+
+    if (filteredCount > 0) {
+      console.warn(`Filtered out ${filteredCount} vehicles without valid IDs`);
+    }
+
+    return validVehicles;
   }
 
   private async fetchVehicleDetails(vehicleId: string): Promise<any> {
-    const response = await this.fetch(`/vehicles/${vehicleId}`);
+    if (!vehicleId || vehicleId.trim() === '') {
+      throw new Error('Vehicle ID is required');
+    }
+    const response = await this.fetch(`/v1/vehicles/${vehicleId}`);
     return await response.json();
   }
 
   private async fetchFaultCodes(vehicleId: string): Promise<any[]> {
-    const response = await this.fetch(`/fault_codes?vehicle_id=${vehicleId}`);
+    const response = await this.fetch(`/v1/fault_codes?vehicle_id=${vehicleId}`);
     const data = await response.json();
     return data.fault_codes || data.data || data || [];
   }
 
   private async fetchInspectionReports(vehicleId: string): Promise<any[]> {
-    const response = await this.fetch(`/inspection_reports?vehicle_id=${vehicleId}`);
+    const response = await this.fetch(`/v1/inspection_reports?vehicle_id=${vehicleId}`);
     const data = await response.json();
     return data.inspection_reports || data.data || data || [];
   }
 
   private async fetchUtilizationData(vehicleId: string): Promise<any> {
-    const response = await this.fetch(`/vehicle_stats/${vehicleId}`);
+    const response = await this.fetch(`/v1/vehicle_stats/${vehicleId}`);
     return await response.json();
   }
 
